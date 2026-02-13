@@ -10,3 +10,4 @@ __version__ = "0.1.0"
 from .io_utils import *
 from .morphology import *
 from .properties import *
+from .tpb_extraction import *
