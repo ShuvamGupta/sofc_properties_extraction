@@ -253,10 +253,13 @@ def calculate_properties(labelled_image, phase_labels, Properties, voxel_size_um
     return merged
 
 
-def tpb_length_per_grain_nosplit(grain_labels, tpb_x, tpb_y, tpb_z, voxel_size_um):
+def tpb_contact_length_per_grain(grain_labels, tpb_x, tpb_y, tpb_z, voxel_size_um):
     """
-    TPB length touching each grain (connected-component labels) without splitting.
-    Assumes at most one non-zero grain id is present among the 4 incident voxels of a TPB edge.
+    TPB contact length per grain (NO splitting)
+    For each TPB edge, count it for every distinct non-zero grain ID among the
+    4 incident voxels. (This matches "grain surface length in contact with TPB".)
+
+    Returns a DataFrame indexed by grain_id with per-direction edge counts and lengths.
     """
     max_grain = int(grain_labels.max())
     if max_grain == 0:
@@ -264,19 +267,33 @@ def tpb_length_per_grain_nosplit(grain_labels, tpb_x, tpb_y, tpb_z, voxel_size_u
 
     voxel_size_um = float(voxel_size_um)
 
-    def count_edges(tpb_mask, g0, g1, g2, g3):
+    def count_contact_edges(tpb_mask, g0, g1, g2, g3):
+        """
+        For each True position in tpb_mask, look at the 4 incident labels (g0..g3),
+        and add +1 to every distinct non-zero grain id present.
+        """
         if not np.any(tpb_mask):
             return np.zeros(max_grain + 1, dtype=np.int64)
 
-        gid = np.maximum.reduce([g0, g1, g2, g3])
-        ids = gid[tpb_mask].ravel().astype(np.int64)
-        ids = ids[ids > 0]
+        a = g0[tpb_mask].ravel().astype(np.int64)
+        b = g1[tpb_mask].ravel().astype(np.int64)
+        c = g2[tpb_mask].ravel().astype(np.int64)
+        d = g3[tpb_mask].ravel().astype(np.int64)
+
+        # Keep only non-zero IDs, and avoid counting the same grain twice within one edge
+        m0 = (a > 0)
+        m1 = (b > 0) & (b != a)
+        m2 = (c > 0) & (c != a) & (c != b)
+        m3 = (d > 0) & (d != a) & (d != b) & (d != c)
+
+        ids = np.concatenate([a[m0], b[m1], c[m2], d[m3]])
         if ids.size == 0:
             return np.zeros(max_grain + 1, dtype=np.int64)
 
         return np.bincount(ids, minlength=max_grain + 1)
 
-    cx = count_edges(
+    # X-oriented edges: incident voxels are a 2x2 in (y,x) at two z planes? (as you had)
+    cx = count_contact_edges(
         tpb_x,
         grain_labels[:-1, :-1, :],
         grain_labels[ 1:, :-1, :],
@@ -284,7 +301,7 @@ def tpb_length_per_grain_nosplit(grain_labels, tpb_x, tpb_y, tpb_z, voxel_size_u
         grain_labels[ 1:,  1:, :]
     )
 
-    cy = count_edges(
+    cy = count_contact_edges(
         tpb_y,
         grain_labels[:-1, :, :-1],
         grain_labels[ 1:, :, :-1],
@@ -292,7 +309,7 @@ def tpb_length_per_grain_nosplit(grain_labels, tpb_x, tpb_y, tpb_z, voxel_size_u
         grain_labels[ 1:, :,  1:]
     )
 
-    cz = count_edges(
+    cz = count_contact_edges(
         tpb_z,
         grain_labels[:, :-1, :-1],
         grain_labels[:,  1:, :-1],
@@ -306,13 +323,18 @@ def tpb_length_per_grain_nosplit(grain_labels, tpb_x, tpb_y, tpb_z, voxel_size_u
     df = pd.DataFrame(index=grain_ids)
     df.index.name = "grain_id"
 
-    df["tpb_edges_x_count"] = cx[grain_ids]
-    df["tpb_edges_y_count"] = cy[grain_ids]
-    df["tpb_edges_z_count"] = cz[grain_ids]
+    df["tpb_edges_x_contact_count"] = cx[grain_ids]
+    df["tpb_edges_y_contact_count"] = cy[grain_ids]
+    df["tpb_edges_z_contact_count"] = cz[grain_ids]
 
-    df["tpb_length_x_um"] = df["tpb_edges_x_count"] * voxel_size_um
-    df["tpb_length_y_um"] = df["tpb_edges_y_count"] * voxel_size_um
-    df["tpb_length_z_um"] = df["tpb_edges_z_count"] * voxel_size_um
-    df["tpb_length_total_um"] = (df["tpb_edges_x_count"] + df["tpb_edges_y_count"] + df["tpb_edges_z_count"]) * voxel_size_um
+    df["tpb_contact_length_x_um"] = df["tpb_edges_x_contact_count"] * voxel_size_um
+    df["tpb_contact_length_y_um"] = df["tpb_edges_y_contact_count"] * voxel_size_um
+    df["tpb_contact_length_z_um"] = df["tpb_edges_z_contact_count"] * voxel_size_um
+
+    df["tpb_contact_length_total_um"] = (
+        df["tpb_edges_x_contact_count"]
+        + df["tpb_edges_y_contact_count"]
+        + df["tpb_edges_z_contact_count"]
+    ) * voxel_size_um
 
     return df
