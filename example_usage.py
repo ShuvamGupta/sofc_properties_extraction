@@ -144,3 +144,53 @@ Properties = [
 Properties = sofca.calculate_properties(Ni_labels, Segmented, Properties, 0.01, 1)
 
 
+# Plot distributions
+"""
+    Plots the distribution of a selected property from a microstructure dataset.
+
+    This function takes a DataFrame of grain/particle properties (like the one returned
+    by `sofca.calculate_properties`) and visualizes the distribution of a specified
+    column. Each particle can be weighted by another property (e.g., volume), and the 
+    plot can be a histogram or a cumulative distribution.
+
+    Parameters
+    ----------
+    Properties : pd.DataFrame
+        Table of particle/grain properties, indexed by grain ID.
+    x_column : str
+        Column name to plot on the x-axis (e.g., 'equivalent_diameter').
+    weight_column : str, optional
+        Column to weight each particle by (e.g., 'Volume'). Default is None.
+    kind : str, optional
+        Type of plot:
+        - 'hist' → histogram
+        - 'cumulative' → cumulative distribution
+        Default is 'hist'.
+    metric : str, optional
+        Metric for the distribution:
+        - 'number' → counts particles (weighted if weight_column is set)
+        - 'volume' → fraction of total volume
+        Default is 'number'.
+    bins : int, optional
+        Number of bins for histogram. Default is 30.
+
+    Returns
+    -------
+    None
+        Displays a plot of the distribution. Does not return a DataFrame.
+    
+    Example
+    -------
+    sofca.plot_distribution(
+        Properties,
+        x_column='equivalent_diameter',
+        weight_column='Volume',
+        kind='hist',
+        metric='number',
+        bins=30
+    )
+"""
+    
+sofca.plot_distribution(Properties, x_column='equivalent_diameter', weight_column = 'Volume', kind='hist', metric='number', bins=30)
+
+
