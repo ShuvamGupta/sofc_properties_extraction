@@ -76,9 +76,5 @@ def plot_distribution(
     plt.grid(False)
     plt.legend()
     plt.show()
-    
-plot_distribution(Properties, x_column='equivalent_diameter', weight_column = 'Volume', kind='hist', metric='number', bins=30)
-plot_distribution(Properties, x_column='equivalent_diameter', weight_column = 'Volume', kind='cumulative', metric='number', bins=30)
-plot_distribution(Properties, x_column='equivalent_diameter', weight_column = 'Volume', kind='hist', metric='volume', bins=30)
 
-plot_distribution(Properties, x_column='equivalent_diameter', weight_column = 'Volume', kind='cumulative', metric='volume', bins=30)
+
