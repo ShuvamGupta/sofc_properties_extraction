@@ -16,6 +16,7 @@ dependencies = [
   "joblib",
   "scipy",
   "openpyxl",
+  "matplotlib",
 ]
 
 [tool.setuptools]
