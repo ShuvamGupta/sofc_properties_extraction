@@ -11,3 +11,4 @@ from .io_utils import *
 from .morphology import *
 from .properties import *
 from .tpb_extraction import *
+from .plot import *
